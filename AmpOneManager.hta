@@ -1,0 +1,322 @@
+﻿<html>
+    <head>
+    <title>AmpOne Manager V1.0 - 极简轻量Win平台PHP整合开发环境</title>
+    <HTA:APPLICATION
+    ID=AmpOne
+    APPLICATIONNAME=AmpOne
+    ICON=material/logo.ico
+    SINGLEINSTANCE=YES
+    CAPTION=YES
+    SYSMENU=YES
+    MINIMIZEBUTTON=YES
+    MAXIMIZEBUTTON=NO
+    SELECTION=NO
+    WINDOWSTATE=NORMAL
+    BORDER=THIN
+    SCROLL=NO
+    >
+    <style>
+        body {background-color: #cccccc}
+        body,input {font-family:"MicrosoftYaHei"; font-size:14px;}
+        input {padding: 0px;}
+        a {text-decoration:none; color: blue;}
+    </style>
+   
+    
+    <script language="VBScript">
+        
+        btDefaultColor = ""
+        btRunningColor = "#EA735D"
+        
+        LogFile = "AmpOne.log"
+        services= array("Apache", "MySQL")
+        
+        apacheStartValue = "启动Apache"
+        apacheStopValue = "关闭Apache"
+        mysqlStartValue = "启动Mysql"
+        mysqlStopValue = "关闭MySQL"
+        
+        apacheMenus =array(apacheStartValue, apacheStopValue)
+        mysqlMenus = array(mysqlStartValue, mysqlStopValue)
+        
+        Dim mysqlBtObj
+        Dim apacheBtObj
+        Dim WshShell
+        Dim apacheRunning
+        Dim mysqlRunning
+        Dim flushing
+        Dim sCurPath 
+        
+        Sub System_Init
+            window.resizeTo 600, 340
+            Set WshShell = CreateObject("WScript.Shell")
+            sCurPath = CreateObject("Scripting.FileSystemObject").GetAbsolutePathName(".")
+            Init_Conf
+            Service_Refresh
+        End Sub
+        
+        Sub Disable_Ctr_Button
+            Set nodes = document.getElementsByTagName("input") 
+            For Each Elem In nodes
+                If (Elem.className = "ctr") Then
+                    Elem.disabled = True
+                End If
+            Next
+        End Sub
+        
+        Sub Enable_Ctr_Button
+            Set nodes = document.getElementsByTagName("input") 
+            For Each Elem In nodes
+                If (Elem.className = "ctr") Then
+                    Elem.disabled = False
+                End If
+            Next
+        End Sub
+        
+        Sub Service_Refresh
+            Disable_Ctr_Button
+            
+            set mysqlBtObj = document.form.startmysql
+            set apacheBtObj = document.form.startapache
+            
+            document.form.servicelist.innerHTML = ""
+            For Each service In services
+                If service = "MySQL" Then
+                    set btObj = mysqlBtObj
+                    btMenu = mysqlMenus
+                ElseIf service = "Apache" Then
+                    set btObj = apacheBtObj
+                    btMenu = apacheMenus
+                End If
+                
+                If Check_Service_Running("AmpOne" & service) Then
+                    btObj.value = btMenu(1)
+                    btObj.style.backgroundColor = btRunningColor
+                    set opt = document.createElement("option")
+                    opt.style.backgroundColor = "green"
+                    opt.style.color = "white"
+                    opt.innerHTML = "√ " & service & " 运行中..."
+                    document.form.servicelist.appendChild(opt)
+                Else
+                    btObj.value = btMenu(0)
+                    btObj.style.backgroundColor = ""
+                    set opt = document.createElement("option")
+                    opt.style.color = "grey"
+                    opt.innerHTML = "X " & service & " 未启动"
+                    document.form.servicelist.appendChild(opt)
+                End If
+            Next
+            Enable_Ctr_Button
+        End Sub
+        
+        Function Check_Service_Running(serviceName)
+            strComputer = "." 
+            Set objWMIService = GetObject("winmgmts:" & "{impersonationLevel=impersonate}!\\" & strComputer & "\root\cimv2")
+            Set RunningServices = objWMIService.ExecQuery("Select * from Win32_Service Where Name='" & serviceName & "'")
+            For Each objService In RunningServices
+                state = objService.state
+            Next
+            Check_Service_Running = False
+            If (state = "Running") Then
+                Check_Service_Running = True
+            End If
+        End Function
+
+
+        Sub Ctr_Mysql
+            BtValue = mysqlBtObj.value
+            mysqlBtObj.style.backgroundColor = ""
+            
+            If BtValue <> mysqlStopValue Then
+                mysqlBtObj.value = "MySQL启动中..."
+                mysqlOpt = "start"
+                errText = "MySQL启动失败，请查看Mysql错误日志了解更多"
+            Else
+                mysqlBtObj.value = "MySQL关闭中..."
+                mysqlOpt = "stop"
+                errText = "MySQL关闭异常，请查看Mysql错误日志了解更多"
+            End If
+            
+            Disable_Ctr_Button
+            
+            rc = WshShell.Run("bin\start-mysql.bat " & mysqlOpt, 0, True)
+            
+            Enable_Ctr_Button
+            
+            If rc <> 0 Then
+                MsgBox errText
+            End If
+            
+            Service_Refresh
+        End Sub
+        
+        Sub Ctr_Apache
+            BtValue = apacheBtObj.value
+            apacheBtObj.style.backgroundColor = ""
+            
+            If BtValue <> apacheStopValue Then
+                apacheBtObj.value = "Apache启动中..."
+                apacheOpt = "start"
+                errText = "Apache启动失败，请查看Apache错误日志了解更多"
+            Else
+                apacheBtObj.value = "Apache关闭中..."
+                apacheOpt = "stop"
+                errText = "Apache关闭异常，请查看Apache错误日志了解更多"
+            End If
+            
+            Disable_Ctr_Button
+            
+            rc = WshShell.Run("bin\start-apache.bat " & apacheOpt, 0, True)
+            
+            Enable_Ctr_Button
+            
+            
+            If rc <> 0 Then
+                MsgBox errText
+            End If
+            
+            Service_Refresh
+        End Sub
+        
+        Sub Init_Conf
+            Set objFSO = CreateObject("Scripting.FileSystemObject")
+            Set objFile = objFSO.OpenTextFile("apps\Apache24\conf\httpd.conf", 1)
+            confText = objFile.ReadAll
+            objFile.Close
+            newConfText = Replace(confText, "%serverroot%", sCurPath & "\apps\Apache24")
+            newConfText = Replace(newConfText, "%documentroot%", sCurPath & "\www")
+            newConfText = Replace(newConfText, "%php7_module%", "php7_module " & sCurPath & "\apps\php\php7apache2_4.dll")
+            newConfText = Replace(newConfText, "%phpinidir%", sCurPath & "\apps\php")
+            Set objFile = objFSO.OpenTextFile("apps\Apache24\conf\httpd.conf", 2)
+            objFile.WriteLine newConfText 
+            objFile.Close
+            
+            
+            Set objFile = objFSO.OpenTextFile("apps\mysql-5.7.17\my.ini", 1)
+            confText = objFile.ReadAll
+            objFile.Close
+            newConfText = Replace(confText, "%basedir%", sCurPath & "\apps\mysql-5.7.17")
+            newConfText = Replace(newConfText, "%datadir%", sCurPath & "\apps\mysql-5.7.17\data")
+            newConfText = Replace(newConfText, "%errorlog%", sCurPath & "\apps\mysql-5.7.17\mysql_error.log")
+            Set objFile = objFSO.OpenTextFile("apps\mysql-5.7.17\my.ini", 2)
+            objFile.WriteLine newConfText 
+            objFile.Close
+        End Sub
+        
+        
+        Sub show_info
+            MsgBox "[AmpOne V1.0]" & vbCrLf & vbCrLf & "Author: Jimmy" & vbCrLf & "Email: 278636108@qq.com" & vbCrLf & "Released: 2017.06.08" & vbCrLf & "Copyright © 2017", 64, "About"
+        End Sub
+        
+        Sub Open_Home
+            WshShell.Run "http://localhost"
+        End Sub
+        
+        Sub Open_PMD
+            WshShell.Run "http://localhost/phpmyadmin"
+        End Sub
+        
+        Sub View_Conf
+            conf = document.form.conflist.value
+            Select case conf
+                case "httpd.conf"
+                    WshShell.Run sCurPath & "\apps\Apache24\conf\httpd.conf"
+                case "php.ini"
+                    WshShell.Run sCurPath & "\apps\php\php.ini"
+                case "mysql.ini"
+                    WshShell.Run sCurPath & "\apps\mysql-5.7.17\my.ini"
+            End Select
+            document.form.conflist.value = "" 
+        End Sub
+        
+        Sub View_Log
+            logfile = document.form.loglist.value
+            Select case logfile
+                case "apache"
+                    WshShell.Run sCurPath & "\apps\Apache24\logs\error.log"
+                case "php"
+                    WshShell.Run sCurPath & "\apps\php\php_errors.log"
+                case "mysql"
+                    WshShell.Run sCurPath & "\apps\mysql-5.7.17\mysql_error.log"
+            End Select
+            document.form.loglist.value = ""
+        End Sub
+        
+        Sub Stop_Exit
+            Disable_Ctr_Button
+            WshShell.Run "bin\start-apache.bat stop", 0, True
+            WshShell.Run "bin\start-mysql.bat stop", 0, True
+            window.close()
+            Enable_Ctr_Button
+            WshShell.Run "taskkill /im mshta.exe", 0, True
+        End Sub
+        
+        
+    </script>
+      
+    </head>
+    <body onload="System_Init()">
+  
+        <div style="margin-bottom:20px;">
+            <img src="./material/httpd_logo_wide_new.png" style="height:40px;" />
+        </div>
+        
+        <form name="form">
+            <div id="menu-bar">
+                <input type="button" name="startapache" class="ctr" style="width:115px;" value="启动Apache" onclick="Ctr_Apache()">
+      
+                <input type="button" name="startmysql" class="ctr" value="启动Mysql" style="width:115px;" onclick="Ctr_Mysql()">
+                
+                <input type="button" name="about" value="关于" style="width:50px;" onclick="show_info()">
+            </div>
+            
+            <div name="quick-startup" style="margin-top:20px;">
+                <a href="###" onclick="Open_Home()">[默认主页]</a>
+                |
+                <a href="###" onclick="Open_PMD()">[管理数据库]</a>
+            </div>
+
+            <div name="status-block" style="margin-top:20px;" >
+                <fieldset style="">
+                    <legend>服务状态：</legend>
+                    <select name="servicelist" multiple="multiple" style="height: auto;width:100%;">
+                    </select>
+                </fieldset>
+            </div>
+     
+            <div style="margin-top:20px;">
+                <select name="conflist" onchange="View_Conf()">
+                    <option value="">查看配置文件</option>
+                    <option value="httpd.conf">httpd.conf</option>
+                    <option value="php.ini">php.ini</option>
+                    <option value="mysql.ini">mysql.ini</option>
+                </select>
+                <select name="loglist" onchange="View_Log()">
+                    <option value="">查看错误日志</option>
+                    <option value="apache">Apache</option>
+                    <option value="php">PHP</option>
+                    <option value="mysql">MySQL</option>
+                </select>
+                <input type="button" class="ctr" name="exit" value="刷新"  onclick="window.location.reload()">
+                
+                <input type="button" class="ctr" name="exit" value="结束并退出"  onclick="Stop_Exit()">
+            </div>
+        </form>
+    </body>
+    
+    <script type="text/javascript">
+        document.onkeydown = function(){
+            if(window.event && window.event.keyCode == 116)
+            {
+                //window.event.keyCode = 505;
+            }
+
+            if(window.event && window.event.keyCode == 505)
+            {
+                return false;
+            }
+        }   
+        
+     </script>
+ 
+</html>
