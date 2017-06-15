@@ -1,5 +1,6 @@
 # AmpOne
-基于Windows平台的Apache 、PHP、Mysql 开发环境 | One intergrated tools package of Apache + PHP + MySQL for windows
+基于Windows平台的Apache 、PHP、Mysql 极简轻量级开发环境 | One intergrated tools package of Apache + PHP + MySQL for windows.
+利用HTA技术实现UI，混合Batch-Script和VBscript编写功能逻辑
 
 ## 版本信息 
 AmpOne当前最新版本为V1.0，内置了Apache2.4、PHP7.1.5、MySQL5.7.17、phpMyAdmin
