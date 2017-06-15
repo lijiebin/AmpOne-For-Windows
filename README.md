@@ -2,7 +2,7 @@
 基于Windows平台的Apache 、PHP、Mysql 极简轻量级开发环境 | One intergrated tools package of Apache + PHP + MySQL for windows
 
 ## 特性 
-利用HTA(Html Application)技术实现UI部分，混合Batch-Script和VBscript编写功能逻辑, 这样的开发方式与Web开发者常用技术相接近，如果有需要很容易在此基础上自定义扩展所需的特性，打造自主的界面化工具集。
+利用HTA(Html Application)技术实现UI部分，混合Batch-Script和VBscript编写功能逻辑, 这样的开发方式与Web开发者常用技术相接近，如果有需要很容易在此基础上自定义扩展所需的特性，打造自主的界面化WinAMP工具集。
 
 ## 版本信息 
 AmpOne当前最新版本为V1.0，内置了Apache2.4、PHP7.1.5、MySQL5.7.17、phpMyAdmin
