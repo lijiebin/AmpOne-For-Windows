@@ -1,7 +1,7 @@
 # AmpOne
 ![qq 20170615151224](https://user-images.githubusercontent.com/11038908/111592791-37106480-8804-11eb-958d-4b5b0a6ba797.png)
 
-One intergrated tools package of Apache + PHP + MySQL for windows
+One click deploy intergrated tools package of Apache + PHP + MySQL for windows
 
 
 ## Features 
